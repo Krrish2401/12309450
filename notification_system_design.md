@@ -52,6 +52,12 @@
 ---
 
 #### 1. Create Notification
+
+POST /api/v1/notifications
+
+**Request Headers:**
+Authorization: Bearer <token>
+
 **Request Body:**
 ```json
 {
@@ -90,6 +96,11 @@
 ---
 
 #### 2. Get Notifications for a Student
+
+GET /api/v1/students/:studentId/notifications
+
+**Request Headers:**
+Authorization: Bearer <token>
 
 **Query Parameters:**
 
@@ -132,6 +143,9 @@
 
 GET /api/v1/notifications/:id
 
+**Request Headers:**
+Authorization: Bearer <token>
+
 **Response — 200 OK:**
 ```json
 {
@@ -161,3 +175,75 @@ GET /api/v1/notifications/:id
 
 PATCH /api/v1/notifications/:id/read
 
+**Request Headers:**
+Authorization: Bearer <token>
+
+**Response — 200 OK:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "d146095a-0d86-4a34-9e69-3900a14576bc",
+    "isRead": true,
+    "updatedAt": "2026-05-14T10:05:00Z"
+  }
+}
+```
+
+---
+
+#### 5. Mark All Notifications as Read
+
+PATCH /api/v1/students/:studentId/notifications/read-all
+
+**Request Headers:**
+Authorization: Bearer <token>
+
+**Response — 200 OK:**
+```json
+{
+  "success": true,
+  "message": "All notifications marked as read",
+  "data": {
+    "updatedCount": 12
+  }
+}
+```
+
+---
+
+#### 6. Get Unread Count
+
+GET /api/v1/students/:studentId/notifications/unread-count
+
+**Request Headers:**
+Authorization: Bearer <token>
+
+**Response — 200 OK:**
+```json
+{
+  "success": true,
+  "data": {
+    "unreadCount": 5
+  }
+}
+```
+
+---
+
+#### 7. Delete Notification
+
+DELETE /api/v1/notifications/:id
+
+**Request Headers:**
+Authorization: Bearer <token>
+
+**Response — 200 OK:**
+```json
+{
+  "success": true,
+  "message": "Notification deleted successfully"
+}
+```
+
+---
