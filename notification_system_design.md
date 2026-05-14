@@ -440,3 +440,21 @@ Sending a notification to all 50,000 students means inserting 50,000 rows in one
 **Solution: Bulk/batched async Inserts via Queues**
 
 Instead of inserting 50,000 rows synchronously, publish the broadcast to a message queue (e.g. BullMQ / RabbitMQ). Workers consume batches of 500–1,000 rows and insert asynchronously.
+
+# Stage 3
+
+### 1. Is This Query Accurate?
+
+**Partially — but  flawed for a normalised schema.**
+
+The query is logically correct for a flat, denormalised `notifications` table where `studentID` and `isRead` are columns on the same table. It will return the right rows in such a setup.
+
+However, for the normalised schema designed in Stage 2, this query is **inaccurate** — `studentID` and `isRead` do not exist on the `notifications` table. They live in `student_notifications`. Running this query against that schema would throw a column-not-found error.
+---
+### 2. Why Is It Slow?
+
+At 100,000 students and 10,000,000 notifications, this query is slow for the following reasons:
+
+#### 1 — Full Table Scan (No Index)
+#### 2 — `SELECT *` Fetches Unnecessary Data
+#### 3 — Unindexed `ORDER BY`
