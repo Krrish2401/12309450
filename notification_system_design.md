@@ -90,3 +90,74 @@
 ---
 
 #### 2. Get Notifications for a Student
+
+**Query Parameters:**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `type` | string | — | Filter by `Placement`, `Event`, or `Result` |
+| `isRead` | boolean | — | Filter by read status |
+| `page` | number | 1 | Pagination page |
+| `limit` | number | 20 | Results per page (max: 100) |
+| `sortBy` | string | `timestamp` | Sort field |
+| `order` | string | `desc` | `asc` or `desc` |
+
+**Response — 200 OK:**
+```json
+{
+  "success": true,
+  "data": {
+    "notifications": [
+      {
+        "id": "d146095a-0d86-4a34-9e69-3900a14576bc",
+        "type": "Result",
+        "message": "mid-sem",
+        "timestamp": "2026-04-22T17:51:30Z",
+        "isRead": false
+      }
+    ],
+    "pagination": {
+      "total": 150,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 8
+    }
+  }
+}
+```
+
+---
+
+#### 3. Get Single Notification
+
+GET /api/v1/notifications/:id
+
+**Response — 200 OK:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "d146095a-0d86-4a34-9e69-3900a14576bc",
+    "type": "Placement",
+    "message": "Campus drive by Google on 28th May 2026",
+    "timestamp": "2026-05-14T10:00:00Z",
+    "isRead": true,
+    "studentId": "student-uuid-1"
+  }
+}
+```
+
+**Error — 404 Not Found:**
+```json
+{
+  "success": false,
+  "error": "Notification not found"
+}
+```
+
+---
+
+#### 4. Mark Notification as Read
+
+PATCH /api/v1/notifications/:id/read
+
