@@ -17,7 +17,9 @@
 
 ---
 
-### Base 
+### Base URL
+
+/api/v1
 ---
 
 ### Common Request Headers
@@ -29,6 +31,11 @@
 | `Accept` | `application/json` | Recommended |
 
 ---
+
+### Authorization and Access Rules
+
+- Student-scoped endpoints require the access token subject to match `:studentId`.
+- Admin/system tokens can access any student and create broadcast notifications.
 
 ### Notification Schema
 
@@ -75,12 +82,13 @@ Authorization: Bearer <token>
 {
   "success": true,
   "data": {
-    "id": "d146095a-0d86-4a34-9e69-3900a14576bc",
-    "type": "Placement",
-    "message": "Campus drive by Google on 28th May 2026",
-    "timestamp": "2026-05-14T10:00:00Z",
-    "isRead": false,
-    "studentIds": ["student-uuid-1", "student-uuid-2"]
+    "broadcast": false,
+    "studentIds": ["student-uuid-1", "student-uuid-2"],
+    "createdCount": 2,
+    "notificationIds": [
+      "d146095a-0d86-4a34-9e69-3900a14576bc",
+      "f7e3a1b1-3f6c-4f04-8d1f-82c1a1f42c8a"
+    ]
   }
 }
 ```
@@ -124,7 +132,8 @@ Authorization: Bearer <token>
         "type": "Result",
         "message": "mid-sem",
         "timestamp": "2026-04-22T17:51:30Z",
-        "isRead": false
+        "isRead": false,
+        "studentId": "student-uuid-1"
       }
     ],
     "pagination": {
@@ -247,3 +256,47 @@ Authorization: Bearer <token>
 ```
 
 ---
+
+### Real-Time Notification Mechanism
+
+**Chosen Approach: Server-Sent Events (SSE)**
+
+#### Why SSE over WebSockets?
+
+| Factor | SSE | WebSockets |
+|---|---|---|
+| Direction | Server to client only, fits notifications | Two-way, best for chat or live collaboration |
+| Protocol | Standard HTTP stream | HTTP upgrade and separate protocol |
+| Reconnection | Built-in auto-reconnect | Client must implement reconnect |
+| Infra fit | Works with most HTTP proxies; buffering must be disabled | Needs WS-friendly proxies and idle timeouts tuned |
+| Payload | Text only (JSON) | Text or binary |
+
+Notifications are a one-way comm from server to client. SSE keeps the implementation simpler and also supports automatic reconnection and works well with typical HTTP infrastructure. WebSockets are better only if the client must send real-time messages back on the same channel (chat, live edits) or if you need binary payloads.
+
+---
+
+#### SSE Endpoint
+
+GET /api/v1/notifications/stream
+
+**Request Headers:**
+Authorization: Bearer <token>
+Accept: text/event-stream
+Cache-Control: no-cache
+Connection: keep-alive
+
+> The stream is scoped to the authenticated user. For missed messages, clients should call the standard fetch endpoint.
+
+**Response — 200 OK (streaming):**
+```Content-Type: text/event-stream
+retry: 5000
+event: notification
+id: 7b9c1b3d-2a7d-4f8a-9f9f-7f3c92f2b111
+data: {"id":"d146095a-0d86-4a34-9e69-3900a14576bc","type":"Placement","message":"Google drive tomorrow","timestamp":"2026-05-14T10:00:00Z","isRead":false,"studentId":"student-uuid-1"}
+event: notification
+id: 7b9c1b3d-2a7d-4f8a-9f9f-7f3c92f2b112
+data: {"id":"f7e3a1b1-3f6c-4f04-8d1f-82c1a1f42c8a","type":"Result","message":"Semester results published","timestamp":"2026-05-14T10:05:00Z","isRead":false,"studentId":"student-uuid-1"}
+: keep-alive
+```
+
+> The server sends a `: keep-alive` comment every 30 seconds to prevent connection timeouts.
