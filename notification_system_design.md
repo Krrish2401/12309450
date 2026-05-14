@@ -458,3 +458,50 @@ At 100,000 students and 10,000,000 notifications, this query is slow for the fol
 #### 1 — Full Table Scan (No Index)
 #### 2 — `SELECT *` Fetches Unnecessary Data
 #### 3 — Unindexed `ORDER BY`
+
+### 3. Query — Students Who Received a Placement Notification in the Last 7 Days
+#### Using Our Normalised Stage 2 Schema (recommended)
+
+```sql
+SELECT DISTINCT
+  s.id,
+  s.name,
+  s.email,
+  s.roll_no
+FROM students s
+JOIN student_notifications sn ON s.id  = sn.student_id
+JOIN notifications n          ON n.id  = sn.notification_id
+WHERE n.type       = 'Placement'
+  AND n.created_at >= NOW() - INTERVAL '7 days'
+ORDER BY s.roll_no;
+```
+
+# Stage 4
+
+## Performance Optimisation — Caching Strategy for Notification Fetching
+
+### The Problem
+
+Every page load triggers:
+```
+Student opens app → GET /students/:id/notifications → DB query → response
+```
+
+With over 100000 students loading notifications simultaneously (e.g. on result day), the database receives tens of thousands of identical or near-identical queries per second — causing high CPU, slow response times and timeouts.
+
+I notice one thing : **most students see the same notifications most of the time**. so sending a query again and again is not necessary.
+
+### Solution — Server-Side Caching with Redis
+
+Cache per-student notification lists in Redis after the first DB fetch. Subsequent requests are served from memory.
+
+#### Tradeoffs
+
+| Pro | Con |
+|---|---|
+| Drastically reduces DB load (cache hit ratio typically 80–95%) | Added infrastructure cost (Redis cluster) |
+| Sub-millisecond response on cache hit | Cache invalidation logic adds code complexity |
+| Horizontally scalable | Stale data possible within TTL window |
+| Supports atomic operations | Memory usage grows with number of students |
+
+---
